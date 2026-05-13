@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { 
   Search, Plus, Trash2, Edit2, Save, Share2, 
   FileText, Building, User, MapPin, Calendar, 
-  X, Map as MapIcon, Clock, MessageCircle
+  X, Map as MapIcon, Clock, MessageCircle, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parseISO, differenceInYears } from 'date-fns';
+import { parseISO, differenceInYears, format } from 'date-fns';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import jsPDF from 'jspdf';
@@ -73,6 +73,33 @@ const Instituciones = () => {
   useEffect(() => {
     fetchInstitutions();
   }, []);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const cleanText = (str) => str ? str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').replace(/[^\x00-\xBF\x20-\x7E\xA1-\xFF]/g, '') : '';
+    
+    doc.setFontSize(18);
+    doc.setTextColor(11, 51, 31);
+    doc.text('REPORTE DE INSTITUCIONES Y UNIDADES', 105, 15, { align: 'center' });
+    
+    const tableData = institutions.map(i => [
+      cleanText(i.name),
+      i.instType,
+      i.locality,
+      i.province,
+      cleanText(i.inCharge) || '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 25,
+      head: [['Nombre', 'Tipo', 'Localidad', 'Provincia', 'Encargado']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [11, 51, 31] }
+    });
+    
+    doc.save(`instituciones_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+  };
 
   const calculateYears = (date) => {
     if (!date) return 0;
@@ -173,39 +200,6 @@ const Instituciones = () => {
     }
   };
 
-  const exportPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      const cleanText = (str) => {
-        if (!str) return '';
-        return str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
-                  .replace(/[^\x00-\xBF\x20-\x7E\xA1-\xFF]/g, '');
-      };
-
-      doc.text('Registro de Instituciones - Gendarmería Nacional', 20, 10);
-      const tableData = filteredInstitutions.map(i => [
-        cleanText(i.name) || '-', 
-        cleanText(i.inCharge) || '-', 
-        i.creationDate || '-', 
-        calculateYears(i.creationDate).toString(), 
-        cleanText(i.locality) || '-', 
-        i.phones ? i.phones.join(', ') : '-'
-      ]);
-      
-      autoTable(doc, {
-        head: [['Institución', 'Jefe / a cargo', 'Creación', 'Años', 'Localidad', 'Teléfonos']],
-        body: tableData,
-        startY: 20,
-        headStyles: { fillColor: [11, 51, 31] }
-      });
-      doc.save('instituciones.pdf');
-    } catch (error) {
-      console.error("Error al generar PDF:", error);
-      Swal.fire('Error', "Hubo un error al generar el PDF. Verifica los datos.", 'error');
-    }
-  };
-
   const shareWhatsApp = (inst) => {
     const text = `🏛️ *INSTITUCIÓN:* ${inst.name}\n👤 *Encargado:* ${inst.inCharge}\n📍 *Dirección:* ${inst.street} ${inst.number}, ${inst.locality}\n📞 *Teléfonos:* ${inst.phones.join(', ')}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
@@ -229,9 +223,8 @@ const Instituciones = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={exportPDF} className="p-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2 font-black text-slate-900">
-            <FileText size={20} />
-            <span className="hidden sm:inline">Descargar PDF</span>
+          <button onClick={exportToPDF} className="p-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" title="Descargar Reporte">
+            <Download size={20} />
           </button>
           <button 
             onClick={() => { setFormData(initialFormState); setEditingInst(null); setShowForm(true); }} 

@@ -13,6 +13,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { sendReminderNotification } from '../services/telegram';
 import Swal from 'sweetalert2';
 
@@ -52,6 +53,32 @@ const Recordatorios = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const cleanText = (str) => str ? str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').replace(/[^\x00-\xBF\x20-\x7E\xA1-\xFF]/g, '') : '';
+    
+    doc.setFontSize(18);
+    doc.setTextColor(11, 51, 31);
+    doc.text('REPORTE DE RECORDATORIOS', 105, 15, { align: 'center' });
+    
+    const tableData = reminders.map(r => [
+      format(parseISO(r.date), 'dd/MM/yyyy'),
+      r.time,
+      cleanText(r.title),
+      r.completed ? 'COMPLETADO' : 'PENDIENTE'
+    ]);
+
+    autoTable(doc, {
+      startY: 25,
+      head: [['Fecha', 'Hora', 'Descripción', 'Estado']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [11, 51, 31] }
+    });
+    
+    doc.save(`recordatorios_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();

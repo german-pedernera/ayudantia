@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Edit2, Save, Share2, 
-  Cake, User, Phone, BadgeInfo, Clock, X, FileText, MessageCircle
+  Cake, User, Phone, BadgeInfo, Clock, X, FileText, MessageCircle, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, differenceInYears } from 'date-fns';
@@ -52,6 +52,33 @@ const Cumpleaños = () => {
   useEffect(() => {
     fetchPersonnel();
   }, []);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const cleanText = (str) => str ? str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').replace(/[^\x00-\xBF\x20-\x7E\xA1-\xFF]/g, '') : '';
+    
+    doc.setFontSize(18);
+    doc.setTextColor(11, 51, 31);
+    doc.text('REPORTE DE PERSONAL Y CUMPLEAÑOS', 105, 15, { align: 'center' });
+    
+    const tableData = personnel.map(p => [
+      p.hierarchy,
+      cleanText(p.name),
+      format(parseISO(p.birthDate), 'dd/MM/yyyy'),
+      calculateAge(p.birthDate).toString(),
+      p.phone || '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 25,
+      head: [['Jerarquía', 'Nombre', 'Nacimiento', 'Edad', 'Teléfono']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [11, 51, 31] }
+    });
+    
+    doc.save(`cumpleaños_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+  };
 
   const calculateAge = (birthDate) => {
     if (!birthDate) return 0;
@@ -164,13 +191,12 @@ const Cumpleaños = () => {
           />
         </div>
         <div className="flex gap-2">
-          <button onClick={exportPDF} className="p-3 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2 font-black text-slate-900">
-            <FileText size={20} />
-            <span className="hidden sm:inline">Descargar PDF</span>
+          <button onClick={exportToPDF} className="p-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" title="Descargar Reporte">
+            <Download size={20} />
           </button>
           <button onClick={() => { setShowForm(true); setEditingPerson(null); }} className="btn-primary flex items-center gap-2">
             <Plus size={20} />
-            <span>Registrar Personal</span>
+            <span>Nuevo Personal</span>
           </button>
         </div>
       </div>

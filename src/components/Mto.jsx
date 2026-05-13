@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Edit2, MessageSquare, 
   CheckCircle2, AlertCircle, Calendar, Send, 
-  X
+  X, Clock, Save, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, parseISO, isPast } from 'date-fns';
+import { format, parseISO, isPast, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { sendMtoNotification } from '../services/telegram';
 import Swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Mto = () => {
   const [mtos, setMtos] = useState([]);
@@ -102,6 +104,33 @@ const Mto = () => {
     m.date.includes(searchTerm)
   ).sort((a, b) => new Date(b.date) - new Date(a.date));
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const cleanText = (str) => str ? str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').replace(/[^\x00-\xBF\x20-\x7E\xA1-\xFF]/g, '') : '';
+    
+    doc.setFontSize(18);
+    doc.setTextColor(11, 51, 31);
+    doc.text('REPORTE DE MENSAJES DE TRÁFICO (MTO)', 105, 15, { align: 'center' });
+    
+    const tableData = filteredMtos.map(m => [
+      format(parseISO(m.date), 'dd/MM/yyyy'),
+      `${m.prefix} ${m.number}`,
+      m.type.toUpperCase(),
+      cleanText(m.content),
+      m.hasDeadline ? format(parseISO(m.deadlineDate), 'dd/MM/yyyy') : '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 25,
+      head: [['Fecha', 'MTO #', 'Tipo', 'Contenido', 'Plazo']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [11, 51, 31] }
+    });
+    
+    doc.save(`reporte_mto_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 justify-between items-center">
@@ -114,6 +143,9 @@ const Mto = () => {
           />
         </div>
         <div className="flex gap-2">
+          <button onClick={exportToPDF} className="p-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" title="Descargar Reporte">
+            <FileText size={20} />
+          </button>
           <button onClick={() => { setShowForm(true); setEditingMto(null); }} className="btn-primary flex items-center gap-2">
             <Plus size={20} />
             <span>Registrar MTO</span>
