@@ -1,0 +1,65 @@
+/* Style Refresh - Premium Theme */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+}
+
+@layer base {
+  body {
+    @apply bg-sky-50 text-slate-900;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-900 font-black;
+  }
+}
+
+.glass-morphism {
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 text-slate-900;
+}
+
+.project-card {
+  @apply bg-white border-2 border-slate-300 rounded-[2.5rem] shadow-xl overflow-hidden transition-all duration-300 text-project-900 font-bold;
+}
+
+.sidebar-active-pill {
+  @apply relative bg-white text-project-700 rounded-l-full ml-4 shadow-md;
+}
+
+.sidebar-active-pill::before {
+  content: '';
+  @apply absolute -top-10 right-0 w-10 h-10 bg-transparent rounded-full shadow-[20px_20px_0_0_#fff] pointer-events-none;
+}
+
+.sidebar-active-pill::after {
+  content: '';
+  @apply absolute -bottom-10 right-0 w-10 h-10 bg-transparent rounded-full shadow-[20px_-20px_0_0_#fff] pointer-events-none;
+}
+
+.btn-primary {
+  @apply bg-project-600 hover:bg-project-700 !text-white font-black py-3 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-project-500/20 flex items-center justify-center gap-2;
+}
+
+.input-field {
+  @apply w-full px-5 py-4 bg-white border-2 border-sky-200 rounded-2xl focus:ring-4 focus:ring-project-500/20 focus:border-project-500 outline-none transition-all duration-200 placeholder:text-slate-400 text-slate-900 font-bold;
+}
+
